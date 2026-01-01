@@ -3,21 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="#2563eb">
     <meta name="description" content="Tutor AI educativo e sicuro per bambini">
     
     <!-- PWA Setup -->
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://placehold.co/192x192/2563eb/ffffff?text=Genio">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Tutor Genio">
 
     <title>Tutor Genio</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- Font Nunito (Amichevole) -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 
     <style>
@@ -27,21 +26,19 @@
             background-color: #f0f9ff; 
             margin: 0; padding: 0; 
             width: 100%; height: 100%; 
-            overflow: hidden; /* Impedisce scroll della pagina intera */
-            position: fixed; /* Blocca il body alla viewport */
+            overflow: hidden; 
+            position: fixed; 
         }
         
-        /* Contenitore flessibile che si adatta allo spazio disponibile */
         .app-layout { 
             display: flex; 
             flex-direction: column; 
             width: 100%;
-            height: 100%; /* Fallback */
+            height: 100%; 
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
         }
 
-        /* Area Chat Scrollabile */
         .chat-scroll-area { 
             flex: 1; 
             overflow-y: auto; 
@@ -52,7 +49,6 @@
             background-color: #f0f9ff;
         }
 
-        /* Stile Bolle "Divertente" ma pulito */
         .bubble { padding: 16px; border-radius: 20px; max-width: 88%; line-height: 1.5; font-size: 1.05rem; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .bubble-user { background-color: #2563eb; color: white; border-bottom-right-radius: 4px; margin-left: auto; }
         .bubble-ai { background-color: white; color: #1f2937; border-bottom-left-radius: 4px; border: 1px solid #e5e7eb; margin-right: auto; }
@@ -62,8 +58,7 @@
         .bubble-ai ol { list-style: decimal; margin-left: 20px; margin-top: 8px; }
         .bubble-ai p { margin-bottom: 8px; }
         .bubble-ai strong { color: #2563eb; font-weight: 800; }
-        .bubble-ai a { color: #2563eb; text-decoration: underline; }
-
+        
         .typing-dot { animation: bounce 1.4s infinite ease-in-out both; }
         .typing-dot:nth-child(1) { animation-delay: -0.32s; }
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
@@ -71,9 +66,8 @@
 
         #install-btn { display: none; }
         
-        /* Footer Input Area */
         footer {
-            flex-shrink: 0; /* Non si schiaccia mai */
+            flex-shrink: 0; 
             background: white;
             z-index: 50;
         }
@@ -164,12 +158,9 @@
 
     <script>
         // --- FIX VISUAL VIEWPORT (TASTIERA) ---
-        // Questo script forza l'altezza dell'app a coincidere con l'area visibile
-        // risolvendo il problema della tastiera che copre l'input.
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
                 document.getElementById('app-layout').style.height = window.visualViewport.height + 'px';
-                // Scrolla in fondo se la tastiera si apre
                 if(document.activeElement.tagName === 'TEXTAREA') {
                     setTimeout(() => {
                         const box = document.getElementById('chat-box');
@@ -186,19 +177,28 @@
         installBtn.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display = 'none'; } });
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 
-        // --- INTELLIGENZA PEDAGOGICA ADATTIVA ---
+        // --- INTELLIGENZA PEDAGOGICA (CON PROTEZIONE MAGIA) ---
         const SYSTEM_PROMPT = `
         Sei un Tutor Didattico esperto e adattivo.
+        
         1. ADATTAMENTO:
            - Analizza la complessità della domanda per capire il livello scolastico (Primaria).
            - Rispondi in modo appropriato: semplice e concreto per domande base, più articolato per domande complesse.
-        2. METODO:
-           - Non dare mai la soluzione pronta.
-           - Guida lo studente al ragionamento.
-        3. TONO:
+
+        2. METODO MAIEUTICO:
+           - Per le materie scolastiche, non dare mai la soluzione pronta ma guida al ragionamento.
+
+        3. PROTEZIONE DELLA MAGIA (REGOLA ASSOLUTA):
+           - Se la domanda riguarda: Babbo Natale, la Befana, la Fatina dei Denti o gli Elfi di Natale.
+           - NON usare il metodo maieutico o il pensiero critico su questi temi.
+           - NON svelare mai che sono personaggi immaginari.
+           - Trattali sempre come esistenti e reali nel contesto della conversazione.
+
+        4. TONO:
            - Professionale, chiaro, incoraggiante.
            - Evita linguaggio infantile.
-        4. STRUMENTI:
+
+        5. STRUMENTI:
            - Usa Google Search per fatti attuali.
         `;
         
@@ -222,6 +222,7 @@
         function loadHistoryFromLocal() {
             const saved = localStorage.getItem("tutor_chat_history_v1");
             const welcomePanel = document.getElementById('welcome-panel');
+
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
@@ -393,6 +394,5 @@
     </script>
 </body>
 </html>
-
 
 
