@@ -3,36 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#ffffff">
     <meta name="description" content="Tutor AI educativo e sicuro per bambini">
     
     <!-- PWA Setup -->
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://placehold.co/192x192/2563eb/ffffff?text=Genio">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Tutor Genio">
 
     <title>Tutor Genio</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- Ritorno al font Nunito (più amichevole) -->
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+    <!-- Font Nunito (Amichevole) -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Nunito', sans-serif; background-color: #f0f9ff; margin: 0; padding: 0; overscroll-behavior: none; }
+        /* FIX CRITICO PER MOBILE LAYOUT */
+        html, body { 
+            font-family: 'Nunito', sans-serif; 
+            background-color: #f0f9ff; 
+            margin: 0; padding: 0; 
+            width: 100%; height: 100%; 
+            overflow: hidden; /* Impedisce scroll della pagina intera */
+            position: fixed; /* Blocca il body alla viewport */
+        }
         
+        /* Contenitore flessibile che si adatta allo spazio disponibile */
         .app-layout { 
             display: flex; 
             flex-direction: column; 
-            height: 100vh; 
-            height: 100dvh; 
-            overflow: hidden; 
-            position: fixed; 
+            width: 100%;
+            height: 100%; /* Fallback */
+            position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
         }
 
+        /* Area Chat Scrollabile */
         .chat-scroll-area { 
             flex: 1; 
             overflow-y: auto; 
@@ -40,6 +49,7 @@
             -webkit-overflow-scrolling: touch; 
             padding: 1rem;
             padding-bottom: 20px; 
+            background-color: #f0f9ff;
         }
 
         /* Stile Bolle "Divertente" ma pulito */
@@ -60,11 +70,18 @@
         @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
 
         #install-btn { display: none; }
+        
+        /* Footer Input Area */
+        footer {
+            flex-shrink: 0; /* Non si schiaccia mai */
+            background: white;
+            z-index: 50;
+        }
     </style>
 </head>
 <body>
 
-    <div class="app-layout">
+    <div class="app-layout" id="app-layout">
         
         <!-- HEADER -->
         <header class="bg-white p-3 px-4 shadow-sm z-20 flex justify-between items-center border-b border-blue-100 flex-none pt-safe-top">
@@ -92,18 +109,18 @@
         </header>
 
         <!-- CHAT AREA -->
-        <main id="chat-box" class="chat-scroll-area bg-[#f0f9ff]">
+        <main id="chat-box" class="chat-scroll-area">
             <div id="welcome-panel" class="flex mb-4 hidden">
                 <div class="bubble bubble-ai">
                     <p class="font-bold text-lg mb-1">Ciao! 👋</p>
-                    <p>Sono il tuo Tutor.</p> 
-                    <p>Posso aiutarti a ragionare su tante cose. Se hai dubbi o vuoi approfondire un argomento, chiedi pure!</p>
+                    <p>Sono il tuo Tutor Didattico.</p> 
+                    <p>Posso aiutarti a ragionare su qualsiasi materia scolastica. Se hai dubbi o vuoi approfondire un argomento, chiedi pure!</p>
                 </div>
             </div>
         </main>
 
         <!-- INPUT AREA -->
-        <footer class="bg-white p-3 pb-safe-bottom border-t border-blue-100 shadow-[0_-4px_10px_-5px_rgba(0,0,0,0.05)] z-20 flex-none pb-6 md:pb-3">
+        <footer class="p-3 pb-safe-bottom border-t border-blue-100 shadow-[0_-4px_10px_-5px_rgba(0,0,0,0.05)] pb-6 md:pb-3">
             <div class="max-w-4xl mx-auto flex gap-2 items-end">
                 <textarea id="user-input" rows="1"
                     class="flex-1 bg-gray-50 text-gray-800 rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 p-3 px-4 resize-none leading-relaxed outline-none transition-all max-h-32 shadow-inner"
@@ -146,6 +163,22 @@
     </div>
 
     <script>
+        // --- FIX VISUAL VIEWPORT (TASTIERA) ---
+        // Questo script forza l'altezza dell'app a coincidere con l'area visibile
+        // risolvendo il problema della tastiera che copre l'input.
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                document.getElementById('app-layout').style.height = window.visualViewport.height + 'px';
+                // Scrolla in fondo se la tastiera si apre
+                if(document.activeElement.tagName === 'TEXTAREA') {
+                    setTimeout(() => {
+                        const box = document.getElementById('chat-box');
+                        box.scrollTop = box.scrollHeight;
+                    }, 100);
+                }
+            });
+        }
+
         // --- PWA LOGIC ---
         let deferredPrompt;
         const installBtn = document.getElementById('install-btn');
@@ -153,26 +186,20 @@
         installBtn.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display = 'none'; } });
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 
-        // --- INTELLIGENZA PEDAGOGICA ADATTIVA (Versione Avanzata) ---
+        // --- INTELLIGENZA PEDAGOGICA ADATTIVA ---
         const SYSTEM_PROMPT = `
-        Sei un Tutor Didattico esperto per la Scuola Primaria (Elementare).
-        
-        1. ADATTAMENTO DINAMICO:
-           - Analizza la complessità della domanda e il linguaggio usato.
-           - Se l'argomento è base (es. sillabe, numeri fino a 20), rispondi come faresti con un bambino di 1a/2a elementare (concreto, visivo).
-           - Se l'argomento è avanzato (es. frazioni, organi del corpo, storia moderna), rispondi per un livello di 4a/5a elementare (linguaggio corretto, struttura logica).
-           - IMPORTANTE: Se non sei sicuro del livello o l'argomento è trattato diversamente nelle varie classi, CHIEDI GENTILMENTE: "Che classe frequenti?" per calibrare la spiegazione.
-
-        2. METODO MAIEUTICO:
+        Sei un Tutor Didattico esperto e adattivo.
+        1. ADATTAMENTO:
+           - Analizza la complessità della domanda per capire il livello scolastico (Primaria).
+           - Rispondi in modo appropriato: semplice e concreto per domande base, più articolato per domande complesse.
+        2. METODO:
            - Non dare mai la soluzione pronta.
-           - Guida lo studente a ragionare passo dopo passo.
-
-        3. TONO E STILE:
-           - Professionale, incoraggiante, chiaro.
-           - Evita toni infantili o condiscendenti. Tratta lo studente con rispetto intellettuale.
-        
+           - Guida lo studente al ragionamento.
+        3. TONO:
+           - Professionale, chiaro, incoraggiante.
+           - Evita linguaggio infantile.
         4. STRUMENTI:
-           - Usa Google Search per fatti attuali o dati precisi.
+           - Usa Google Search per fatti attuali.
         `;
         
         let chatHistory = [];
@@ -181,6 +208,9 @@
         window.onload = function() {
             const storedKey = localStorage.getItem("gemini_api_key");
             loadHistoryFromLocal();
+            // Forza reset altezza al caricamento
+            if (window.visualViewport) { document.getElementById('app-layout').style.height = window.visualViewport.height + 'px'; }
+            
             if (storedKey) autoSelectBestModel(storedKey); else openSettings();
         };
 
@@ -192,7 +222,6 @@
         function loadHistoryFromLocal() {
             const saved = localStorage.getItem("tutor_chat_history_v1");
             const welcomePanel = document.getElementById('welcome-panel');
-
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
@@ -214,7 +243,7 @@
         }
 
         function clearHistory() {
-            if(confirm("Vuoi cancellare tutta la conversazione e ricominciare?")) {
+            if(confirm("Vuoi cancellare tutta la cronologia e ricominciare?")) {
                 chatHistory = [];
                 localStorage.removeItem("tutor_chat_history_v1");
                 location.reload(); 
@@ -364,5 +393,6 @@
     </script>
 </body>
 </html>
+
 
 
