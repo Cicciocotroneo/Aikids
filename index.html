@@ -172,7 +172,7 @@
                     <input type="password" id="api-key-input" class="w-full p-3 bg-gray-50 border rounded-xl focus:border-blue-500 outline-none text-sm font-mono" placeholder="Incolla AIzaSy...">
                 </div>
                 <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 flex flex-col gap-1">
-                    <span class="text-xs text-blue-800 font-bold">Modello (Quota Alta):</span>
+                    <span class="text-xs text-blue-800 font-bold">Modello (Alta Capacità):</span>
                     <span id="model-status-text" class="text-xs text-blue-600 font-mono break-all">...</span>
                 </div>
                 <button onclick="saveAndAutoConfigure()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 active:scale-95 transition-all">Salva e Ricarica</button>
@@ -273,7 +273,7 @@
             document.getElementById('stop-speak-btn').classList.add('hidden');
         }
 
-        // --- FORZATURA MODELLO STABILE (1.5 FLASH) ---
+        // --- SELEZIONE MODELLO STABILE (1.5 FLASH) ---
         async function autoSelectBestModel(apiKey) {
             const statusText = document.getElementById('model-status-text');
             const display = document.getElementById('model-display');
@@ -286,9 +286,7 @@
                 if (!response.ok) throw new Error("Errore API");
                 const data = await response.json();
                 
-                // CERCHIAMO SOLO GEMINI 1.5 FLASH (Standard)
-                // Questa è la versione che garantisce 1500 richieste/giorno
-                // Ignoriamo 2.0 e 2.5 per evitare problemi di quota
+                // CERCHIAMO SOLO GEMINI 1.5 FLASH (Standard o Latest)
                 const models = data.models;
                 const flash15 = models.find(m => m.name === "models/gemini-1.5-flash");
                 const flash15Latest = models.find(m => m.name === "models/gemini-1.5-flash-latest");
@@ -298,7 +296,8 @@
                 } else if (flash15Latest) {
                     currentModel = "gemini-1.5-flash-latest";
                 } else {
-                    // Fallback solo se 1.5 non esiste
+                    // Fallback solo se 1.5 non esiste (molto raro)
+                    // Filtra via 2.5/2.0 e prende qualsiasi flash rimasto
                     const anyFlash = models.find(m => m.name.includes("flash") && !m.name.includes("2.5") && !m.name.includes("2.0"));
                     if(anyFlash) currentModel = anyFlash.name.replace("models/", "");
                     else currentModel = "gemini-1.5-flash"; // Fallback estremo
@@ -306,9 +305,9 @@
 
                 localStorage.setItem("gemini_model", currentModel);
                 
-                const versionLabel = currentModel.replace("gemini-", "").toUpperCase().replace("MODELS/", "");
+                // Visualizzazione PULITA per l'utente
                 statusText.textContent = currentModel;
-                display.textContent = "TUTOR ATTIVO (" + versionLabel + ")";
+                display.textContent = "TUTOR ATTIVO (1.5 FLASH)"; // Etichetta fissa e chiara
                 indicator.classList.remove("opacity-0");
 
             } catch (error) {
@@ -429,6 +428,4 @@
     </script>
 </body>
 </html>
-
-
 
