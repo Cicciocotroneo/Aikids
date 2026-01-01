@@ -17,6 +17,7 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Ritorno al font Nunito (più amichevole) -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
 
     <style>
@@ -41,6 +42,7 @@
             padding-bottom: 20px; 
         }
 
+        /* Stile Bolle "Divertente" ma pulito */
         .bubble { padding: 16px; border-radius: 20px; max-width: 88%; line-height: 1.5; font-size: 1.05rem; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .bubble-user { background-color: #2563eb; color: white; border-bottom-right-radius: 4px; margin-left: auto; }
         .bubble-ai { background-color: white; color: #1f2937; border-bottom-left-radius: 4px; border: 1px solid #e5e7eb; margin-right: auto; }
@@ -80,7 +82,6 @@
                 <button id="install-btn" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-blue-200 transition-colors">
                     Installa
                 </button>
-                <!-- Tasto CANCELLA STORIA -->
                 <button onclick="clearHistory()" class="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors" title="Nuova Chat">
                     🧹
                 </button>
@@ -92,12 +93,11 @@
 
         <!-- CHAT AREA -->
         <main id="chat-box" class="chat-scroll-area bg-[#f0f9ff]">
-            <!-- Il messaggio di benvenuto è gestito via JS ora -->
             <div id="welcome-panel" class="flex mb-4 hidden">
                 <div class="bubble bubble-ai">
                     <p class="font-bold text-lg mb-1">Ciao! 👋</p>
-                    <p>La nostra chat è salvata qui sul tuo dispositivo. 🔒</p>
-                    <p id="welcome-msg" class="text-sm text-gray-500">Sto scaldando i motori...</p>
+                    <p>Sono il tuo Tutor Didattico.</p> 
+                    <p>Posso aiutarti a ragionare su qualsiasi materia scolastica, dalla Prima alla Quinta elementare. Se hai dubbi o vuoi approfondire un argomento, chiedi pure!</p>
                 </div>
             </div>
         </main>
@@ -140,7 +140,7 @@
                     <span id="model-status-text" class="text-xs text-blue-600 font-mono break-all">...</span>
                 </div>
 
-                <button onclick="saveAndAutoConfigure()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 active:scale-95 transition-all">Salva e Ricarica</button>
+                <button onclick="saveAndAutoConfigure()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 active:scale-95 transition-all">Salva e Configura</button>
             </div>
         </div>
     </div>
@@ -153,32 +153,39 @@
         installBtn.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display = 'none'; } });
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 
-        // --- CORE LOGIC ---
+        // --- INTELLIGENZA PEDAGOGICA ADATTIVA (Versione Avanzata) ---
         const SYSTEM_PROMPT = `
-        Sei Genio, un tutor per bambini di 10 anni (Quinta Elementare).
-        1. USALO SEMPRE Google Search per fatti attuali.
-        2. NON dare soluzioni dirette. Guida al ragionamento.
-        3. SICUREZZA: Educato, no contenuti adulti.
-        4. Rispondi in modo semplice e divertente.
+        Sei un Tutor Didattico esperto per la Scuola Primaria (Elementare).
+        
+        1. ADATTAMENTO DINAMICO:
+           - Analizza la complessità della domanda e il linguaggio usato.
+           - Se l'argomento è base (es. sillabe, numeri fino a 20), rispondi come faresti con un bambino di 1a/2a elementare (concreto, visivo).
+           - Se l'argomento è avanzato (es. frazioni, organi del corpo, storia moderna), rispondi per un livello di 4a/5a elementare (linguaggio corretto, struttura logica).
+           - IMPORTANTE: Se non sei sicuro del livello o l'argomento è trattato diversamente nelle varie classi, CHIEDI GENTILMENTE: "Che classe frequenti?" per calibrare la spiegazione.
+
+        2. METODO MAIEUTICO:
+           - Non dare mai la soluzione pronta.
+           - Guida lo studente a ragionare passo dopo passo.
+
+        3. TONO E STILE:
+           - Professionale, incoraggiante, chiaro.
+           - Evita toni infantili o condiscendenti. Tratta lo studente con rispetto intellettuale.
+        
+        4. STRUMENTI:
+           - Usa Google Search per fatti attuali o dati precisi.
         `;
         
         let chatHistory = [];
         let currentModel = ""; 
 
         window.onload = function() {
-            // 1. Carica la chiave API
             const storedKey = localStorage.getItem("gemini_api_key");
-            
-            // 2. Carica la Storia della Chat Locale
             loadHistoryFromLocal();
-
-            // 3. Avvia connessione modello
             if (storedKey) autoSelectBestModel(storedKey); else openSettings();
         };
 
-        // --- GESTIONE MEMORIA LOCALE ---
+        // --- LOCAL STORAGE ---
         function saveHistoryToLocal() {
-            // Salviamo l'intera array chatHistory come stringa JSON
             localStorage.setItem("tutor_chat_history_v1", JSON.stringify(chatHistory));
         }
 
@@ -191,26 +198,18 @@
                     const parsed = JSON.parse(saved);
                     if (parsed.length > 0) {
                         chatHistory = parsed;
-                        // Renderizza i vecchi messaggi
                         chatHistory.forEach(msg => {
-                            // Mappiamo 'model' in 'ai' per la funzione grafica
                             const sender = msg.role === 'user' ? 'user' : 'ai';
-                            // msg.text o msg.parts[0].text a seconda di come è salvato
                             const text = msg.text || (msg.parts && msg.parts[0].text) || "";
-                            if(text) appendMessageToUI(text, sender, false); // false = no scroll animation aggressiva
+                            if(text) appendMessageToUI(text, sender, false);
                         });
-                        // Nascondi benvenuto se c'è storia
                         welcomePanel.classList.add('hidden');
-                        // Scrolla in fondo
                         const box = document.getElementById('chat-box');
                         box.scrollTop = box.scrollHeight;
                         return;
                     }
-                } catch (e) {
-                    console.error("Errore caricamento storia", e);
-                }
+                } catch (e) { console.error(e); }
             }
-            // Se non c'è storia, mostra benvenuto
             welcomePanel.classList.remove('hidden');
         }
 
@@ -218,18 +217,17 @@
             if(confirm("Vuoi cancellare tutta la conversazione e ricominciare?")) {
                 chatHistory = [];
                 localStorage.removeItem("tutor_chat_history_v1");
-                location.reload(); // Ricarica la pagina per pulire la grafica
+                location.reload(); 
             }
         }
 
-        // --- SELEZIONE MODELLO (FLASH ONLY) ---
+        // --- FLASH ONLY MODELS ---
         async function autoSelectBestModel(apiKey) {
             const statusText = document.getElementById('model-status-text');
             const display = document.getElementById('model-display');
             const indicator = document.getElementById('status-indicator');
-            const welcomeMsg = document.getElementById('welcome-msg');
             
-            statusText.textContent = "Cerco modelli Flash...";
+            statusText.textContent = "Connessione...";
             
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
@@ -257,7 +255,6 @@
                 statusText.textContent = currentModel;
                 display.textContent = "MEMORIA ATTIVA (" + versionLabel + ")";
                 indicator.classList.remove("opacity-0");
-                if(welcomeMsg) welcomeMsg.textContent = `Pronto! Uso il cervello ${currentModel}.`;
 
             } catch (error) {
                 console.error(error);
@@ -285,7 +282,6 @@
             if (!message || !apiKey) return;
             if (!apiKey) { openSettings(); return; }
 
-            // Nascondi benvenuto se è il primo messaggio
             document.getElementById('welcome-panel').classList.add('hidden');
 
             input.value = ''; input.style.height = 'auto'; input.disabled = true;
@@ -293,7 +289,6 @@
             const loadingId = appendLoading();
 
             try {
-                // Costruzione storia per API
                 const contents = chatHistory.map(m => ({ role: m.role, parts: [{ text: m.text }] }));
                 contents.push({ role: "user", parts: [{ text: message }] });
 
@@ -315,8 +310,8 @@
 
                 if (!response.ok) {
                     document.getElementById(loadingId).remove();
-                    if (response.status === 429) appendError("🚫 <b>Quota Esaurita</b><br>Messaggi finiti per oggi.");
-                    else appendError(`⚠️ <b>Errore Tecnico (${response.status})</b>`);
+                    if (response.status === 429) appendError("Quota giornaliera esaurita.");
+                    else appendError(`Errore di connessione (${response.status})`);
                     input.disabled = false; input.focus();
                     return;
                 }
@@ -327,21 +322,17 @@
                 if (data.candidates && data.candidates[0].content) {
                     const aiText = data.candidates[0].content.parts[0].text;
                     appendMessageToUI(aiText, 'ai');
-                    
-                    // AGGIORNA E SALVA STORIA
                     chatHistory.push({ role: "user", text: message });
                     chatHistory.push({ role: "model", text: aiText });
-                    if(chatHistory.length > 30) chatHistory = chatHistory.slice(-30); // Mantieni ultimi 30 scambi
-                    
-                    saveHistoryToLocal(); // <--- SALVATAGGIO
-
+                    if(chatHistory.length > 30) chatHistory = chatHistory.slice(-30);
+                    saveHistoryToLocal(); 
                 } else if (data.candidates && data.candidates[0].finishReason) {
-                     if (data.candidates[0].finishReason === "SAFETY") appendError("🚫 <b>Argomento Bloccato</b>");
-                     else appendError("⚠️ Nessuna risposta.");
+                     if (data.candidates[0].finishReason === "SAFETY") appendError("Argomento non visualizzabile (Filtro Sicurezza).");
+                     else appendError("Nessuna risposta generata.");
                 }
             } catch (error) {
                 if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
-                appendError("⚠️ <b>Errore Connessione</b>");
+                appendError("Verifica la connessione internet.");
             }
             input.disabled = false; input.focus();
         }
@@ -373,6 +364,5 @@
     </script>
 </body>
 </html>
-
 
 
