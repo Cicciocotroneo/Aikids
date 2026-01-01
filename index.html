@@ -22,6 +22,7 @@
     <style>
         body { font-family: 'Nunito', sans-serif; background-color: #f0f9ff; margin: 0; padding: 0; overscroll-behavior: none; }
         
+        /* Layout Mobile-Fit */
         .app-layout { 
             display: flex; 
             flex-direction: column; 
@@ -41,18 +42,21 @@
             padding-bottom: 20px; 
         }
 
+        /* Stili Bolle Chat */
         .bubble { padding: 16px; border-radius: 20px; max-width: 88%; line-height: 1.5; font-size: 1.05rem; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .bubble-user { background-color: #2563eb; color: white; border-bottom-right-radius: 4px; margin-left: auto; }
         .bubble-ai { background-color: white; color: #1f2937; border-bottom-left-radius: 4px; border: 1px solid #e5e7eb; margin-right: auto; }
         
+        /* Formattazione Testo AI */
         .bubble-ai ul { list-style: disc; margin-left: 20px; margin-top: 8px; }
         .bubble-ai ol { list-style: decimal; margin-left: 20px; margin-top: 8px; }
         .bubble-ai p { margin-bottom: 8px; }
         .bubble-ai strong { color: #2563eb; font-weight: 800; }
         
-        /* Stile messaggi di errore specifici */
+        /* Bolle Errore */
         .bubble-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
 
+        /* Animazioni */
         .typing-dot { animation: bounce 1.4s infinite ease-in-out both; }
         .typing-dot:nth-child(1) { animation-delay: -0.32s; }
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
@@ -64,6 +68,8 @@
 <body>
 
     <div class="app-layout">
+        
+        <!-- HEADER -->
         <header class="bg-white p-3 px-4 shadow-sm z-20 flex justify-between items-center border-b border-blue-100 flex-none pt-safe-top">
             <div class="flex items-center gap-3">
                 <div class="bg-blue-600 text-white w-10 h-10 rounded-xl flex items-center justify-center text-xl font-bold shadow-blue-200 shadow-lg">G</div>
@@ -71,26 +77,32 @@
                     <h1 class="text-lg font-bold text-gray-800 leading-tight">Tutor Genio</h1>
                     <div id="status-indicator" class="flex items-center gap-1.5 opacity-0 transition-opacity duration-500">
                         <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                        <span id="model-display" class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">DIAGNOSTICA...</span>
+                        <span id="model-display" class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">CONNESSIONE...</span>
                     </div>
                 </div>
             </div>
             <div class="flex gap-2">
-                <button id="install-btn" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-blue-200 transition-colors">Installa</button>
-                <button onclick="openSettings()" class="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-gray-50 transition-colors">⚙️</button>
+                <button id="install-btn" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-blue-200 transition-colors">
+                    Installa
+                </button>
+                <button onclick="openSettings()" class="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-gray-50 transition-colors">
+                    ⚙️
+                </button>
             </div>
         </header>
 
+        <!-- CHAT AREA -->
         <main id="chat-box" class="chat-scroll-area bg-[#f0f9ff]">
             <div class="flex mb-4">
                 <div class="bubble bubble-ai">
                     <p class="font-bold text-lg mb-1">Ciao! 👋</p>
-                    <p>Ho aggiornato il mio sistema.</p> 
-                    <p>Se c'è un errore, ora ti spiegherò esattamente qual è il problema.</p>
+                    <p>Ho impostato il sistema sulla modalità "Alta Capacità" (Flash). ⚡</p>
+                    <p id="welcome-msg" class="text-sm text-gray-500">Pronto a studiare!</p>
                 </div>
             </div>
         </main>
 
+        <!-- INPUT AREA -->
         <footer class="bg-white p-3 pb-safe-bottom border-t border-blue-100 shadow-[0_-4px_10px_-5px_rgba(0,0,0,0.05)] z-20 flex-none pb-6 md:pb-3">
             <div class="max-w-4xl mx-auto flex gap-2 items-end">
                 <textarea id="user-input" rows="1"
@@ -107,6 +119,7 @@
                 </button>
             </div>
         </footer>
+
     </div>
 
     <!-- MODALE IMPOSTAZIONI -->
@@ -121,23 +134,39 @@
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">API Key Google</label>
                     <input type="password" id="api-key-input" class="w-full p-3 bg-gray-50 border rounded-xl focus:border-blue-500 outline-none text-sm font-mono" placeholder="Incolla AIzaSy...">
                 </div>
+                
                 <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 flex flex-col gap-1">
-                    <span class="text-xs text-blue-800 font-bold">Modello Attivo:</span>
+                    <span class="text-xs text-blue-800 font-bold">Modello Attivo (Flash):</span>
                     <span id="model-status-text" class="text-xs text-blue-600 font-mono break-all">...</span>
                 </div>
-                <button onclick="saveAndAutoConfigure()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 active:scale-95 transition-all">Salva e Riprova</button>
+
+                <button onclick="saveAndAutoConfigure()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 active:scale-95 transition-all">Salva e Configura</button>
             </div>
         </div>
     </div>
 
     <script>
+        // --- PWA INSTALLATION ---
         let deferredPrompt;
         const installBtn = document.getElementById('install-btn');
-        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; });
-        installBtn.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display = 'none'; } });
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block';
+        });
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display = 'none'; }
+        });
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 
-        const SYSTEM_PROMPT = `Sei Genio, un tutor per bambini di 10 anni. 1. Usa Google Search per fatti attuali. 2. Non dare soluzioni dirette. 3. Sicurezza: Educato, niente contenuti adulti. 4. Rispondi semplice e divertente.`;
+        // --- CORE LOGIC ---
+        // SYSTEM PROMPT: Tarato per 5a Elementare (10 anni)
+        const SYSTEM_PROMPT = `
+        Sei Genio, un tutor per bambini di 10 anni (Quinta Elementare).
+        1. USALO SEMPRE Google Search per fatti attuali, sport, meteo o date.
+        2. NON dare soluzioni dirette ai compiti. Guida al ragionamento.
+        3. SICUREZZA: Educato, niente contenuti adulti/violenti.
+        4. Rispondi in modo semplice, divertente e usa emoji.
+        `;
+        
         let chatHistory = [];
         let currentModel = ""; 
 
@@ -146,47 +175,60 @@
             if (storedKey) autoSelectBestModel(storedKey); else openSettings();
         };
 
+        // --- FUNZIONE MODIFICATA: SOLO FLASH ---
         async function autoSelectBestModel(apiKey) {
             const statusText = document.getElementById('model-status-text');
             const display = document.getElementById('model-display');
             const indicator = document.getElementById('status-indicator');
-            statusText.textContent = "Connessione...";
+            const welcomeMsg = document.getElementById('welcome-msg');
+            
+            statusText.textContent = "Cerco modelli Flash...";
+            
             try {
+                // Recupera la lista modelli
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-                if (!response.ok) {
-                    if (response.status === 400) throw new Error("Chiave API non valida");
-                    if (response.status === 429) throw new Error("Quota Esaurita (Torna domani!)");
-                    throw new Error("Errore Connessione Google");
-                }
+                if (!response.ok) throw new Error("Errore API/Quota");
                 const data = await response.json();
+                
+                // Filtra solo quelli che supportano generateContent
                 const models = data.models.filter(m => m.supportedGenerationMethods.includes("generateContent"));
                 
+                // --- LOGICA DI SELEZIONE PRIORITARIA (SOLO FLASH) ---
+                // Cerchiamo esplicitamente modelli con "flash" nel nome.
+                // Ordine di preferenza: 2.5 Flash -> 2.0 Flash -> 1.5 Flash Latest -> 1.5 Flash
+                
                 let bestModelObj = null;
-                const model25 = models.find(m => m.name.includes("gemini-2.5"));
-                const model20 = models.find(m => m.name.includes("gemini-2.0"));
-                const modelFlashLatest = models.find(m => m.name.includes("gemini-1.5-flash-latest"));
-                const modelFlash = models.find(m => m.name.includes("gemini-1.5-flash"));
 
-                if (model25) bestModelObj = model25;
-                else if (model20) bestModelObj = model20;
-                else if (modelFlashLatest) bestModelObj = modelFlashLatest;
-                else if (modelFlash) bestModelObj = modelFlash;
-                else if (models.length > 0) bestModelObj = models[0];
-                else throw new Error("Nessun modello disponibile");
+                const flash25 = models.find(m => m.name.includes("gemini-2.5") && m.name.includes("flash"));
+                const flash20 = models.find(m => m.name.includes("gemini-2.0") && m.name.includes("flash"));
+                const flash15Latest = models.find(m => m.name.includes("gemini-1.5-flash-latest"));
+                const flash15 = models.find(m => m.name.includes("gemini-1.5-flash"));
 
+                if (flash25) bestModelObj = flash25;
+                else if (flash20) bestModelObj = flash20;
+                else if (flash15Latest) bestModelObj = flash15Latest;
+                else if (flash15) bestModelObj = flash15;
+                // Se non trova nessun flash (strano), prende il primo disponibile
+                else if (models.length > 0) bestModelObj = models[0]; 
+                else throw new Error("Nessun modello trovato");
+
+                // Salvataggio
                 currentModel = bestModelObj.name.replace("models/", "");
                 localStorage.setItem("gemini_model", currentModel);
                 
-                const versionLabel = currentModel.replace("gemini-", "").replace("latest", "").toUpperCase();
+                // Aggiornamento UI
+                const versionLabel = currentModel.replace("gemini-", "").toUpperCase().replace("MODELS/", "");
                 statusText.textContent = currentModel;
-                display.textContent = versionLabel;
+                display.textContent = versionLabel; // Es: "1.5-FLASH-LATEST"
                 indicator.classList.remove("opacity-0");
+                if(welcomeMsg) welcomeMsg.textContent = `Connesso a: ${currentModel} (Alta Capacità).`;
 
             } catch (error) {
                 console.error(error);
-                statusText.textContent = error.message;
+                statusText.textContent = "Errore Connessione";
                 statusText.classList.add("text-red-500");
-                currentModel = "gemini-1.5-flash"; // Fallback
+                // Fallback sicuro se tutto fallisce
+                currentModel = "gemini-1.5-flash"; 
             }
         }
 
@@ -203,7 +245,10 @@
             const input = document.getElementById('user-input');
             const message = input.value.trim();
             const apiKey = localStorage.getItem("gemini_api_key");
+            
+            // Fallback
             if (!currentModel) currentModel = "gemini-1.5-flash";
+
             if (!message || !apiKey) return;
             if (!apiKey) { openSettings(); return; }
 
@@ -221,7 +266,9 @@
                     body: JSON.stringify({
                         contents: contents,
                         system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+                        // Ricerca Google attiva
                         tools: [{ google_search: {} }],
+                        // Filtri di Sicurezza (Bilanciati per 10 anni)
                         safety_settings: [
                             { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }, 
                             { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" }, 
@@ -231,19 +278,18 @@
                     })
                 });
 
-                // --- GESTIONE ERRORI AVANZATA ---
+                // --- GESTIONE ERRORI CHIARA ---
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     document.getElementById(loadingId).remove();
                     
                     if (response.status === 429) {
-                        appendError("🚫 <b>Limite raggiunto!</b><br>Hai finito i messaggi gratuiti per oggi. Google resetterà la quota domani.");
+                        appendError("🚫 <b>Quota Esaurita</b><br>Hai finito i messaggi per oggi. La chiave si resetta domani.");
                     } else if (response.status === 400) {
-                        appendError("⚠️ <b>Errore Richiesta</b><br>La domanda potrebbe essere troppo lunga o la chiave non valida.");
-                    } else if (response.status === 500 || response.status === 503) {
-                        appendError("⚠️ <b>Google sta riposando</b><br>I server di Gemini sono momentaneamente occupati. Riprova tra 1 minuto.");
+                        appendError("⚠️ <b>Errore Richiesta</b><br>Controlla la tua Chiave API.");
+                    } else if (response.status === 503) {
+                        appendError("⚠️ <b>Server Occupato</b><br>Gemini sta riposando. Riprova tra un minuto.");
                     } else {
-                        // Mostra l'errore reale se disponibile
                         const msg = errorData.error?.message || response.statusText;
                         appendError(`⚠️ <b>Errore Tecnico (${response.status})</b><br>${msg}`);
                     }
@@ -261,14 +307,14 @@
                     if(chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
                 } else if (data.candidates && data.candidates[0].finishReason) {
                      if (data.candidates[0].finishReason === "SAFETY") {
-                        appendError("🚫 <b>Argomento Bloccato</b><br>Questo argomento non è adatto (Filtro Sicurezza Bambini).");
+                        appendError("🚫 <b>Argomento Bloccato</b><br>Non adatto ai bambini.");
                      } else {
-                        appendError("⚠️ L'IA non ha generato una risposta.");
+                        appendError("⚠️ Nessuna risposta generata.");
                      }
                 }
             } catch (error) {
                 if(document.getElementById(loadingId)) document.getElementById(loadingId).remove();
-                appendError("⚠️ <b>Nessuna connessione internet</b><br>Controlla il Wi-Fi.");
+                appendError("⚠️ <b>Nessuna Connessione</b><br>Controlla il Wi-Fi.");
             }
             input.disabled = false; input.focus();
         }
@@ -298,5 +344,6 @@
     </script>
 </body>
 </html>
+
 
 
