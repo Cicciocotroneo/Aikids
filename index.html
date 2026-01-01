@@ -47,7 +47,7 @@
                     <h1 class="text-lg font-bold text-gray-800 leading-tight">Tutor Genio</h1>
                     <div id="status-indicator" class="flex items-center gap-1.5 opacity-0 transition-opacity duration-500">
                         <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                        <span id="model-display" class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">UNIVERSALE</span>
+                        <span id="model-display" class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">SELEZIONE MANUALE</span>
                     </div>
                 </div>
             </div>
@@ -63,7 +63,7 @@
                 <div class="bubble bubble-ai">
                     <p class="font-bold text-lg mb-1">Ciao! 👋</p>
                     <p>Sono il tuo Tutor Didattico.</p> 
-                    <p>Se non rispondo, vai nelle impostazioni e premi "SCANSIONA E SALVA".</p>
+                    <p>Se non rispondo, vai nelle impostazioni e scegli manualmente il modello.</p>
                 </div>
             </div>
         </main>
@@ -77,22 +77,29 @@
         </footer>
     </div>
 
-    <!-- MODALE IMPOSTAZIONI UNIVERSALE -->
     <div id="settings-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex justify-center items-center z-50 p-4">
-        <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden transform transition-all scale-100">
-            <div class="bg-blue-600 p-4 text-white flex justify-between items-center">
+        <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
+            <div class="bg-blue-600 p-4 text-white flex justify-between items-center flex-none">
                 <h2 class="text-lg font-bold">⚙️ Configurazione</h2>
                 <button onclick="closeSettings()" class="text-white/80 hover:text-white">&times;</button>
             </div>
-            <div class="p-6 space-y-4">
+            <div class="p-6 space-y-4 overflow-y-auto">
                 <div>
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">API Key Google</label>
                     <input type="password" id="api-key-input" class="w-full p-3 bg-gray-50 border rounded-xl focus:border-blue-500 outline-none text-sm font-mono" placeholder="Incolla AIzaSy...">
                 </div>
-                <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <p id="scan-status" class="text-xs text-blue-800 font-bold text-center">Premi per trovare un modello valido</p>
+                
+                <button id="scan-btn" onclick="scanModels()" class="w-full py-2 bg-blue-100 text-blue-700 font-bold rounded-lg hover:bg-blue-200 transition-all text-sm">🔍 SCANSIONA MODELLI</button>
+
+                <div id="model-select-container" class="hidden">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Scegli Modello:</label>
+                    <select id="model-select" class="w-full p-3 bg-white border border-blue-200 rounded-xl text-sm font-mono focus:border-blue-500 outline-none">
+                        </select>
                 </div>
-                <button id="scan-btn" onclick="scanAndSave()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 active:scale-95 transition-all">SCANSIONA E SALVA</button>
+
+                <div id="scan-status" class="text-xs text-center text-gray-500 min-h-[20px]"></div>
+
+                <button id="save-btn" onclick="saveSettings()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 active:scale-95 transition-all hidden">SALVA SELEZIONE</button>
             </div>
         </div>
     </div>
@@ -121,7 +128,7 @@
 
         window.onload = function() {
             const storedKey = localStorage.getItem("gemini_api_key");
-            const storedModel = localStorage.getItem("gemini_model_fixed");
+            const storedModel = localStorage.getItem("gemini_model_manual");
             
             loadHistoryFromLocal();
             if (window.visualViewport) { document.getElementById('app-layout').style.height = window.visualViewport.height + 'px'; }
@@ -179,74 +186,73 @@
         function openSettings() { document.getElementById('settings-modal').classList.remove('hidden'); document.getElementById('api-key-input').value = localStorage.getItem("gemini_api_key") || ""; }
         function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
         
-        async function scanAndSave() {
+        async function scanModels() {
             const key = document.getElementById('api-key-input').value.trim();
             const statusBox = document.getElementById('scan-status');
-            const btn = document.getElementById('scan-btn');
+            const scanBtn = document.getElementById('scan-btn');
+            const selectContainer = document.getElementById('model-select-container');
+            const select = document.getElementById('model-select');
+            const saveBtn = document.getElementById('save-btn');
             
             if (!key) { statusBox.innerHTML = "<span class='text-red-600'>Inserisci chiave!</span>"; return; }
             
-            statusBox.innerHTML = "<span class='text-blue-600 animate-pulse'>🔍 Interrogo Google...</span>";
-            btn.disabled = true;
+            statusBox.innerHTML = "<span class='text-blue-600 animate-pulse'>Connessione a Google...</span>";
+            scanBtn.disabled = true;
+            selectContainer.classList.add('hidden');
+            saveBtn.classList.add('hidden');
+            select.innerHTML = ""; // Reset opzioni
 
             try {
-                // 1. CHIEDIAMO A GOOGLE LA LISTA DEI MODELLI DISPONIBILI
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-                
-                if (!response.ok) {
-                    throw new Error(`Errore ${response.status} (Chiave non valida?)`);
-                }
-
+                if (!response.ok) throw new Error(`Errore ${response.status}`);
                 const data = await response.json();
                 
-                // 2. FILTRIAMO: Solo quelli che generano testo
+                // Filtra solo modelli di testo
                 const models = data.models.filter(m => m.supportedGenerationMethods.includes("generateContent"));
                 
-                if (models.length === 0) throw new Error("Nessun modello trovato per questa chiave.");
+                if (models.length === 0) throw new Error("Nessun modello trovato.");
 
-                // 3. SCEGLIAMO IL MIGLIORE (Priorità: Flash -> Pro -> Altro)
-                let selectedModel = null;
-                
-                // Cerchiamo 1.5 Flash (Stabile)
-                const flash15 = models.find(m => m.name.includes("gemini-1.5-flash") && !m.name.includes("latest"));
-                // Cerchiamo 1.5 Flash Latest
-                const flash15Latest = models.find(m => m.name.includes("gemini-1.5-flash-latest"));
-                // Cerchiamo Pro
-                const pro15 = models.find(m => m.name.includes("gemini-1.5-pro"));
-                // Fallback: il primo della lista (spesso gemini-pro 1.0)
-                const fallback = models[0];
+                // Popola il menu a tendina
+                models.forEach(model => {
+                    const option = document.createElement("option");
+                    option.value = model.name; // es: models/gemini-1.5-flash
+                    option.text = model.name.replace("models/", ""); // es: gemini-1.5-flash
+                    select.appendChild(option);
+                });
 
-                // Assegnazione priorità
-                if (flash15) selectedModel = flash15.name;
-                else if (flash15Latest) selectedModel = flash15Latest.name;
-                else if (pro15) selectedModel = pro15.name;
-                else selectedModel = fallback.name;
+                // Cerca di pre-selezionare 1.5 flash se c'è
+                const preferred = models.find(m => m.name.includes("gemini-1.5-flash") && !m.name.includes("latest"));
+                if (preferred) select.value = preferred.name;
 
-                // Puliamo il nome per salvarlo (rimuove 'models/' se presente nell'URL dopo)
-                // L'API vuole 'models/nome' nel path o solo 'nome' a seconda della versione, 
-                // ma di solito models/nome è sicuro se non raddoppiato.
-                // Salviamo il nome ESATTO restituito da Google.
-                
-                // FIX: Se il nome contiene già 'models/', lo usiamo così com'è per display ma lo puliamo per la chiamata se necessario
-                // In realtà la chiamata v1beta/models/{NAME} vuole il nome.
-                // Se la lista restituisce "models/gemini-1.5-flash", useremo quello.
-                
-                localStorage.setItem("gemini_api_key", key);
-                localStorage.setItem("gemini_model_fixed", selectedModel);
-                currentModel = selectedModel;
-
-                // Aggiorna UI
-                const shortName = selectedModel.replace("models/", "");
-                statusBox.innerHTML = `<span class='text-green-600 font-bold'>✅ Trovato: ${shortName}</span>`;
-                document.getElementById('model-display').textContent = shortName.toUpperCase();
-                document.getElementById('status-indicator').classList.remove('opacity-0');
-
-                setTimeout(() => { closeSettings(); btn.disabled = false; }, 1500);
+                statusBox.innerHTML = "<span class='text-green-600 font-bold'>Modelli trovati! Seleziona e Salva.</span>";
+                selectContainer.classList.remove('hidden');
+                saveBtn.classList.remove('hidden');
+                scanBtn.disabled = false;
 
             } catch (error) {
                 console.error(error);
                 statusBox.innerHTML = `<span class='text-red-600 font-bold'>❌ ${error.message}</span>`;
-                btn.disabled = false;
+                scanBtn.disabled = false;
+            }
+        }
+
+        function saveSettings() {
+            const key = document.getElementById('api-key-input').value.trim();
+            const selectedModel = document.getElementById('model-select').value;
+            
+            if (key && selectedModel) {
+                localStorage.setItem("gemini_api_key", key);
+                localStorage.setItem("gemini_model_manual", selectedModel);
+                currentModel = selectedModel;
+                
+                // Aggiorna UI principale
+                const shortName = selectedModel.replace("models/", "").replace("gemini-", "").toUpperCase();
+                document.getElementById('model-display').textContent = shortName;
+                document.getElementById('status-indicator').classList.remove('opacity-0');
+                
+                closeSettings();
+            } else {
+                alert("Seleziona un modello!");
             }
         }
 
@@ -257,8 +263,7 @@
             const message = input.value.trim();
             const apiKey = localStorage.getItem("gemini_api_key");
             
-            // Recupera modello fisso salvato dalla scansione
-            if (!currentModel) currentModel = localStorage.getItem("gemini_model_fixed");
+            if (!currentModel) currentModel = localStorage.getItem("gemini_model_manual");
 
             if (!message || !apiKey) return;
             if (!apiKey || !currentModel) { openSettings(); return; }
@@ -272,11 +277,17 @@
                 const contents = chatHistory.map(m => ({ role: m.role, parts: [{ text: m.text }] }));
                 contents.push({ role: "user", parts: [{ text: message }] });
 
-                // ATTENZIONE: Se currentModel ha già "models/" (es. models/gemini-pro), l'URL non deve aggiungere un altro "models/"
-                // L'endpoint è: .../v1beta/{model_name}:generateContent
-                // Se il nome è "models/gemini-1.5-flash", l'URL diventa .../v1beta/models/gemini-1.5-flash:generateContent (CORRETTO)
+                // ATTENZIONE: Se selectedModel ha già "models/", l'URL non deve aggiungere un altro "models/"
+                // Ma l'API vuole che se si usa v1beta/models/{name}, il {name} sia "gemini-1.5-flash"
+                // Se invece si usa v1beta/{name}, il {name} deve essere "models/gemini-1.5-flash"
+                // Per sicurezza, se il nome inizia con "models/", lo usiamo direttamente nel path dopo v1beta/
                 
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${currentModel}:generateContent?key=${apiKey}`, {
+                let endpointName = currentModel;
+                // Se nel menu hai scelto "models/gemini-pro", currentModel è "models/gemini-pro".
+                // L'url deve essere: v1beta/models/gemini-pro:generateContent
+                // Quindi va bene fare v1beta/${currentModel}
+                
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${endpointName}:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -360,4 +371,3 @@
     </script>
 </body>
 </html>
-
